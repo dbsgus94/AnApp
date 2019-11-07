@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:orientation="vertical"
+    android:background="@drawable/topbottom_edge" >
+
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="25dp"
+        android:paddingBottom="20dp"
+        android:paddingRight="10dp"
+        android:paddingLeft="10dp"
+        android:textAlignment="center"
+        android:textSize="55px"
+        android:textColor="@color/colorDark"
+        android:background="@drawable/top_edge"
+        android:textStyle="italic"
+        android:fontFamily="@font/nanumgodik"/>
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="match_parent"
+        android:layout_height="75dp"
+        android:layout_gravity="center"
+        android:background="@drawable/top_edge"
+        android:fontFamily="@font/nanumgodikbold"
+        android:text="\n\t\t\t\t주변에 이런 공원은 어떠세요?"
+        android:textColor="@color/colorDark"
+        android:textSize="60px" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/horizontalScroll">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:id="@+id/linearLayout">
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="\t"
+        android:textSize="15dp"
+        android:background="@drawable/top_edge"/>
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="\t\t\t\t나는 오늘 이만큼 걸었다!"
+        android:textColor="@color/colorDark"
+        android:textSize="60px"
+        android:fontFamily="@font/nanumgodikbold"
+        />
+
+    <ProgressBar
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="71dp"
+        android:progress="0"
+        android:id="@+id/progress"
+        android:progressDrawable="@drawable/progressbar_progressbar1" />
+
+    <TextView
+        android:id="@+id/textView5"
+        android:layout_width="match_parent"
+        android:layout_height="91dp"
+        android:background="@drawable/bottom_edge"
+        android:gravity="center"
+        android:textColor="@color/colorDark"
+        android:textSize="30dp"
+        android:fontFamily="@font/nanumgodikbold"/>
+    <TextView
+        android:id="@+id/step"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:textColor="@color/colorDark"
+        android:textSize="15sp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal"
+        android:padding="20dp">
+
+        <Button
+            android:id="@+id/toMapsbutton"
+            android:layout_width="150dp"
+            android:layout_height="50dp"
+            android:background="@drawable/button_edge_black"
+            android:fontFamily="@font/nanumgodik"
+            android:gravity="center"
+            android:onClick="gotoMaps"
+            android:text=" 걷기 시작! "
+            android:textStyle="bold"
+            android:textColor="@color/colorDark"
+            android:textSize="55px" />
+
+        <ImageButton
+            android:id="@+id/mapsRefresh"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:layout_marginLeft="10dp"
+            android:background="@drawable/button_edge_black"
+            android:src="@drawable/refresh_foreground" />
+    </LinearLayout>
+</LinearLayout>
