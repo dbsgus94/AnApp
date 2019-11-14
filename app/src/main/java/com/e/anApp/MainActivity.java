@@ -49,12 +49,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     static ArrayList<String> parkList ; //api에서 받아온 공원의 이름
     static ArrayList<String> latitudeList; //api에서 받아온 공원 위치의 latitude
     static ArrayList<String> longtitudeList; //api에서 받아온 공원 위치의 longitude
-    static ArrayList<Place> places; //공원들의 list
 
 
-    LinearLayout linearLayout;
 
-    private GpsTracker gpsTracker;
     private static final int GPS_ENABLE_REQUEST_CODE = 2001;
     private static final int PERMISSIONS_REQUEST_CODE = 100;
     String[] REQUIRED_PERMISSIONS = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
@@ -64,11 +61,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Sensor mSensor;
     private boolean isSensorPresent = false;
     private int mStepOffset;
-    public static float progressValue;
     public ProgressBar simpleProgressBar;
     public int maxStep;
-    static double latitude;
-    static double longitude;
+
 
     static int mStepDetector;
 
@@ -77,12 +72,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        imageURLList = new ArrayList<String>();
-        imageindexlist = new ArrayList<>();
-        parkList = new ArrayList<>();
-        latitudeList = new ArrayList<>();
-        longtitudeList = new ArrayList<>();
-        places = new ArrayList<Place>();
+
         maxStep = 8000;
 
         ImageButton refreshButton = (ImageButton) findViewById(R.id.mapsRefresh);
@@ -117,14 +107,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             isSensorPresent = false;
         }
 
-        //위치 퍼미션
-        if(!checkLocationServicesStatus()) {
-            showDialogForLocationServiceSetting();
-        } else {
-            checkRunTimePermission();
-        }
 
-        gpsTracker = new GpsTracker(MainActivity.this);
+
 
         //다이어트 자극 명언 보여주기
         /*다음 링크 참고
@@ -169,52 +153,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         editor.putInt("index", index);
         editor.apply();
 
-        linearLayout = (LinearLayout) findViewById(R.id.linearLayout);
 
-        if (BuildConfig.DEBUG) {
-            StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
-                    .detectAll()
-                    .penaltyLog()
-                    .build());
-            StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
-                    .detectAll()
-                    .penaltyLog()
-                    .build());
-        }
 
-        latitude = gpsTracker.getLatitude();
-        longitude = gpsTracker.getLongitude();
-        LatLng curLatLng = new LatLng(latitude, longitude);
-
-        imageParsing();
-
-        for(int i = 0; i < 131; i++) {
-            places.add(new Place(parkList.get(i), new LatLng(Double.parseDouble(latitudeList.get(i)), Double.parseDouble(longtitudeList.get(i))), imageURLList.get(i), imageindexlist.get(i)));
-        }
-
-        Collections.sort(places, new SortPlaces(curLatLng)); //공원들을 현재 위치를 기반으로 거리별 sorting
-
-        for(int i = 0; i < 10; i++) {
-            ImageView imageView = new ImageView(this);
-            imageView.setLayoutParams(new LinearLayout.LayoutParams(350, 450));
-            imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-            imageView.setPadding(5, 5, 5, 5);
-            imageView.setImageDrawable(LoadImageFromWebOperations(places.get(i).imageurl)); //sorting된 후
-            linearLayout.addView(imageView);
-            final int num = i;
-
-            imageView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(MainActivity.this, ParkInfoActivity.class);
-                    Bundle extras = new Bundle();
-                    extras.putString("position", places.get(num).index);
-                    intent.putExtras(extras);
-                    startActivity(intent);
-                    //finish();
-                }
-            });
-        }
     }
 
     @Override
@@ -353,61 +293,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             final SharedPreferences.Editor mapsettingsEditor = mapsettings.edit();
 
             if(firstStart) {
-                startActivity(new Intent(MainActivity.this, MapsGuideActivity.class));
-                overridePendingTransition(R.anim.anim_fade_in, R.anim.anim_fade_out);
+                startActivity(new Intent(MainActivity.this, MapsActivity.class));
 
                 mapsettingsEditor.putBoolean("firstStart", false);
                 mapsettingsEditor.commit();
             } else {
                 startActivity(new Intent(MainActivity.this, MapsActivity.class));
             }
-            overridePendingTransition(R.anim.anim_fade_in, R.anim.anim_fade_out);
         }
     }
 
-
-    //참고한 사이트: https://stackoverflow.com/questions/29711728/how-to-sort-geo-points-according-to-the-distance-from-current-location-in-androi
-    public class Place {
-        public String name;
-        public LatLng latlng;
-        public String imageurl;
-        public String index;
-
-        public Place(String name, LatLng latlng, String imageurl, String index) {
-            this.name = name;
-            this.latlng = latlng;
-            this.imageurl = imageurl;
-            this.index = index;
-        }
-    }
-
-    public class SortPlaces implements Comparator<Place> {
-        LatLng currentLoc;
-
-        public SortPlaces(LatLng current) {
-            currentLoc = current;
-        }
-
-        @Override
-        public int compare(final Place place1, final Place place2) {
-            double lat1 = place1.latlng.latitude;
-            double lng1 = place1.latlng.longitude;
-            double lat2 = place2.latlng.latitude;
-            double lng2 = place2.latlng.longitude;
-
-            double distanceToPlace1 = distance(currentLoc.latitude, currentLoc.longitude, lat1, lng1);
-            double distanceToPlace2 = distance(currentLoc.latitude, currentLoc.longitude, lat2, lng2);
-            return (int) (distanceToPlace1 - distanceToPlace2);
-        }
-
-        public double distance(double fromLat, double fromLng, double toLat, double toLng) {
-            double radius = 6378137; //대략적인 지구의 반지름(단위:미터)
-            double deltaLat = toLat - fromLat;
-            double deltaLng = toLng - fromLng;
-            double angle = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(deltaLat/2), 2) + Math.cos(fromLat) * Math.cos(toLat) * Math.pow(Math.sin(deltaLng/2), 2)));
-            return radius * angle;
-        }
-    }
 
     //참고한 사이트: https://webnautes.tistory.com/1315
     @Override
@@ -453,53 +348,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
-    //여기부터는 GPS 활성화를 위한 메소드들
-    private void showDialogForLocationServiceSetting() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-        builder.setTitle("위치 서비스 비활성화");
-        builder.setMessage("앱을 사용하기 위해서는 위치 서비스가 필요합니다.\n"
-                + "위치 설정을 수정하실래요?");
-        builder.setCancelable(true);
-        builder.setPositiveButton("설정", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int id) {
-                Intent callGPSSettingIntent
-                        = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                startActivityForResult(callGPSSettingIntent, GPS_ENABLE_REQUEST_CODE);
-            }
-        });
-        builder.setNegativeButton("취소", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int id) {
-                dialog.cancel();
-            }
-        });
-        builder.create().show();
-    }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        switch (requestCode) {
-            case GPS_ENABLE_REQUEST_CODE:
-                if (checkLocationServicesStatus()) {
-                    if (checkLocationServicesStatus()) {
-
-                        Log.d("@@@", "onActivityResult : GPS 활성화 되있음");
-                        checkRunTimePermission();
-                        return;
-                    }
-                }
-                break;
-        }
-    }
-
-    public boolean checkLocationServicesStatus() {
-        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-                || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-    }
 
     @Override
     public void onBackPressed() {

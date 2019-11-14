@@ -13,18 +13,16 @@
         android:theme="@style/Theme.AppCompat.NoActionBar"
         android:usesCleartextTraffic="true"
         tools:replace="android:appComponentFactory">
-        <activity android:name="com.e.anApp.MapsGuideActivity"></activity>
-        <activity android:name="com.e.anApp.MainGuideActivity" />
-        <activity android:name="com.e.anApp.WelcomeActivity">
+
+
+
+
+        <activity android:name="com.e.anApp.MainActivity" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity android:name="com.e.anApp.MainActivity" />
-        <activity android:name="com.e.anApp.HomeActivity">
-
         </activity>
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
