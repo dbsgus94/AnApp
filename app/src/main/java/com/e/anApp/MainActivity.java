@@ -6,6 +6,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
+import android.graphics.drawable.BitmapDrawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -43,6 +45,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     TextView textView;
     TextView textView5;
+    ImageView imageView;
+    ImageView imageView2;
+    ImageView imageView3;
+    ImageView imageView4;
+    ImageView imageView5;
+    ImageView imageView6;
+    ImageView imageView7;
+
 
     static ArrayList<String> imageURLList ; //api에서 받아온 이미지의 url
     static ArrayList<String> imageindexlist; //api에서 받아온 이미지의 index
@@ -71,6 +81,28 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        imageView = (ImageView) findViewById(R.id.imageView);
+        imageView.setImageResource(R.drawable.pizza);
+
+        imageView2 = (ImageView) findViewById(R.id.imageView2);
+        imageView2.setImageResource(R.drawable.hamburger);
+
+        imageView3 = (ImageView) findViewById(R.id.imageView3);
+        imageView3.setImageResource(R.drawable.cake);
+
+        imageView4 = (ImageView) findViewById(R.id.imageView4);
+        imageView4.setImageResource(R.drawable.chicken);
+
+        imageView5 = (ImageView) findViewById(R.id.imageView5);
+        imageView5.setImageResource(R.drawable.beer);
+
+        imageView6 = (ImageView) findViewById(R.id.imageView6);
+        imageView6.setImageResource(R.drawable.donut);
+
+        imageView7 = (ImageView) findViewById(R.id.imageView7);
+        imageView7.setImageResource(R.drawable.pasta);
+
 
 
         maxStep = 8000;

@@ -27,11 +27,11 @@
     <TextView
         android:id="@+id/textView3"
         android:layout_width="match_parent"
-        android:layout_height="75dp"
+        android:layout_height="65dp"
         android:layout_gravity="center"
         android:background="@drawable/top_edge"
         android:fontFamily="@font/nanumgodikbold"
-        android:text="\n\t\t\t\t주변에 이런 공원은 어떠세요?"
+        android:text="\n\t\t\t\t너는 오늘 이만큼 먹었다!"
         android:textColor="@color/colorDark"
         android:textSize="60px" />
 
@@ -46,10 +46,47 @@
             android:orientation="horizontal"
             android:id="@+id/linearLayout">
 
+            <ImageView
+                android:id="@+id/imageView"
+                android:layout_width="150dp"
+                android:layout_height="100dp"
+                android:src="@drawable/pizza" />
+
+            <ImageView
+                android:id="@+id/imageView2"
+                android:layout_width="150dp"
+                android:layout_height="100dp"
+                android:src="@drawable/hamburger" />
+            <ImageView
+                android:id="@+id/imageView3"
+                android:layout_width="150dp"
+                android:layout_height="100dp"
+                android:src="@drawable/cake" />
+            <ImageView
+                android:id="@+id/imageView4"
+                android:layout_width="150dp"
+                android:layout_height="100dp"
+                android:src="@drawable/chicken" />
+            <ImageView
+                android:id="@+id/imageView5"
+                android:layout_width="150dp"
+                android:layout_height="100dp"
+                android:src="@drawable/beer" />
+            <ImageView
+                android:id="@+id/imageView6"
+                android:layout_width="150dp"
+                android:layout_height="100dp"
+                android:src="@drawable/donut" />
+            <ImageView
+                android:id="@+id/imageView7"
+                android:layout_width="150dp"
+                android:layout_height="100dp"
+                android:src="@drawable/pasta" />
+
         </LinearLayout>
 
-    </HorizontalScrollView>
 
+    </HorizontalScrollView>
 
     <TextView
         android:layout_width="match_parent"
