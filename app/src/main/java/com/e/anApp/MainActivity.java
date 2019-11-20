@@ -53,16 +53,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     ImageView imageView6;
     ImageView imageView7;
 
-
-    static ArrayList<String> imageURLList ; //api에서 받아온 이미지의 url
-    static ArrayList<String> imageindexlist; //api에서 받아온 이미지의 index
-    static ArrayList<String> parkList ; //api에서 받아온 공원의 이름
-    static ArrayList<String> latitudeList; //api에서 받아온 공원 위치의 latitude
-    static ArrayList<String> longtitudeList; //api에서 받아온 공원 위치의 longitude
-
-
-
-    private static final int GPS_ENABLE_REQUEST_CODE = 2001;
     private static final int PERMISSIONS_REQUEST_CODE = 100;
     String[] REQUIRED_PERMISSIONS = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
 
@@ -185,8 +175,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         editor.putInt("index", index);
         editor.apply();
 
-
-
     }
 
     @Override
@@ -224,18 +212,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
-
-    //참고한 사이트: https://stackoverflow.com/questions/6407324/how-to-display-image-from-url-on-android
-    public static Drawable LoadImageFromWebOperations(String url) {
-        try {
-            InputStream is = (InputStream) new URL(url).getContent();
-            Drawable d = Drawable.createFromStream(is, null);
-            return d;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-    
 
     public void gotoMaps(View view){
         if(view.getId() == R.id.toMapsbutton){
