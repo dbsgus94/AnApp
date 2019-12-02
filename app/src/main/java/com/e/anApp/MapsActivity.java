@@ -56,17 +56,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-//FitActivity
-
-
-
-
 public class MapsActivity extends AppCompatActivity
         implements SensorEventListener,OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener {
-
+    GPSTracker myGPS;
     private GoogleApiClient mGoogleApiClient = null;
     private GoogleMap mGoogleMap = null;
     private Marker currentMarker = null;
@@ -117,7 +112,6 @@ public class MapsActivity extends AppCompatActivity
         if(timerTime == Long.MIN_VALUE){
             return SystemClock.elapsedRealtime() - ch.getBase();
         }
-
         return timerTime;
     }
 
@@ -136,9 +130,11 @@ public class MapsActivity extends AppCompatActivity
         setContentView(R.layout.activity_maps);
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
+
         tvStepDetector = (TextView) findViewById(R.id.stepcount);
         tvStepDistance=(TextView)findViewById(R.id.stepdistance);
         tvStepCal = (TextView)findViewById(R.id.stepcal);
+
         btn_start = (Button) findViewById(R.id.start);
         btn_end = (Button) findViewById(R.id.end);
         btn_reset = (Button) findViewById(R.id.reset);
@@ -154,8 +150,16 @@ public class MapsActivity extends AppCompatActivity
             public void onClick(View v) {
                 isbtn_start = true;
                 startTimer();
-                Toast.makeText(MapsActivity.this, "걷기 시작", Toast.LENGTH_SHORT).show();
-
+                myGPS = new GPSTracker(MapsActivity.this);
+                //startService(new Intent(getBaseContext(), GPSTracker.class));
+                if (myGPS.canGetLocation()) {
+                    double latitude = myGPS.getLatitude();
+                    double longitude = myGPS.getLongitude();
+                    Toast.makeText(getApplicationContext(), "당신의 위치는 경도: " + latitude + " " + "위도: " + longitude, Toast.LENGTH_LONG).show();
+                } else {
+                    myGPS.showSettingAlert();
+                }
+               // Toast.makeText(MapsActivity.this, "걷기 시작", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -166,6 +170,7 @@ public class MapsActivity extends AppCompatActivity
                 isbtn_start = false;
                 isbtn_end=true;
                 stopTimer();
+                stopService(new Intent(getBaseContext(),GPSTracker.class));
                 Toast.makeText(MapsActivity.this,"걷기 종료",Toast.LENGTH_SHORT).show();
             }
         });
@@ -218,6 +223,11 @@ public class MapsActivity extends AppCompatActivity
     protected void onPause() {
         super.onPause();
         sensorManager.unregisterListener(this);
+    }
+    @Override
+    protected void onNewIntent(Intent intent) {
+
+        super.onNewIntent(intent);
     }
 
     @Override
@@ -526,7 +536,6 @@ public class MapsActivity extends AppCompatActivity
 
 
     public void setCurrentLocation(Location location, String markerTitle, String markerSnippet) {
-
         mMoveMapByUser = false;
         tt = new TimerTask() {
             @Override
@@ -540,31 +549,26 @@ public class MapsActivity extends AppCompatActivity
 
         //if (currentMarker != null) currentMarker.remove();
 
-        if(isbtn_start) {
             //Toast.makeText(this, ""+getTimerTime(), Toast.LENGTH_SHORT).show();
-                LatLng currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-                markerOptions = new MarkerOptions();
-                markerOptions.position(currentLatLng);
-                markerOptions.title(markerTitle);
-                markerOptions.snippet(markerSnippet);
-                markerOptions.draggable(true);
-                markerOptions.title("나 여기 있어요");
-                markerOptions.anchor(0.5f, 0.5f);
-                markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.circle));
-                currentMarker = mGoogleMap.addMarker(markerOptions);
-                if (mMoveMapByAPI) {
-
+            LatLng currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+            markerOptions = new MarkerOptions();
+            markerOptions.position(currentLatLng);
+            markerOptions.title(markerTitle);
+            markerOptions.snippet(markerSnippet);
+            markerOptions.draggable(true);
+            markerOptions.title("나 여기 있어요");
+            markerOptions.anchor(0.5f, 0.5f);
+            markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.circle));
+        if(isbtn_start) {
+            currentMarker = mGoogleMap.addMarker(markerOptions);
+            if (mMoveMapByAPI) {
                     Log.d(TAG, "setCurrentLocation :  mGoogleMap moveCamera "
                             + location.getLatitude() + " " + location.getLongitude());
                     CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(currentLatLng, 17);
                     //CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(currentLatLng);
                     mGoogleMap.moveCamera(cameraUpdate);
                 }
-
-
         }
-
-
     }
 
     public void getMyLocation()
@@ -781,9 +785,6 @@ public class MapsActivity extends AppCompatActivity
                 break;
         }
     }
-
-
-
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {

@@ -158,4 +158,5 @@
             android:background="@drawable/button_edge_black"
             android:src="@drawable/refresh_foreground" />
     </LinearLayout>
+
 </LinearLayout>

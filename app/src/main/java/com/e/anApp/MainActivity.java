@@ -1,5 +1,6 @@
 package com.e.anApp;
 
+import android.app.Service;
 import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -63,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private int mStepOffset;
     public ProgressBar simpleProgressBar;
     public int maxStep;
+    public Intent passedIntent;
 
 
     static int mStepDetector;
@@ -92,6 +94,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         imageView7 = (ImageView) findViewById(R.id.imageView7);
         imageView7.setImageResource(R.drawable.pasta);
+
+        passedIntent = getIntent();
+        //processCommand(passedIntent);
 
 
 
@@ -174,8 +179,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         else index ++;
         editor.putInt("index", index);
         editor.apply();
-
     }
+/*
+    public void startService(View view) { startService(new Intent(getBaseContext(), MyService.class)); }
+    public void stopService(View view) { stopService(new Intent(getBaseContext(),MyService.class)); }
+
+ */
+/*
+    @Override
+    protected void onNewIntent(Intent intent) {
+        processCommand(passedIntent);
+        super.onNewIntent(intent);
+    }
+
+    private void processCommand(Intent intent) {
+        if (intent != null) {
+            String command = intent.getStringExtra("command");
+            String name = intent.getStringExtra("name");
+
+            Toast.makeText(this, "서비스로부터 전달받은 데이터: " + command + ", " + name, Toast.LENGTH_LONG).show();
+        }
+    }
+    */
+
 
     @Override
     protected void onResume() {
@@ -186,6 +212,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     SensorManager.SENSOR_DELAY_NORMAL);
         }
     }
+
+
 
     @Override
     protected void onPause() {
