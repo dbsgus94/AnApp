@@ -587,10 +587,8 @@ public class MapsActivity extends AppCompatActivity
                 //CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(DEFAULT_LOCATION, 17);
 
                 mGoogleMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), location.getLongitude())));
-                CameraUpdate center=
-                        CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()),17);
+                CameraUpdate center= CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()),17);
                 CameraUpdate zoom=CameraUpdateFactory.zoomTo(17);
-
                 mGoogleMap.moveCamera(center);
                 mGoogleMap.animateCamera(zoom);
             }

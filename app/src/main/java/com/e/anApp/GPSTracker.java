@@ -11,6 +11,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.widget.Toast;
 
 
 public class GPSTracker extends Service implements LocationListener {
@@ -101,8 +102,7 @@ public class GPSTracker extends Service implements LocationListener {
                         DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
-                                Intent intent = new
-                                        Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                                 myContext.startActivity(intent);
                             }
                         });
@@ -117,6 +117,11 @@ public class GPSTracker extends Service implements LocationListener {
     }
     @Override
     public void onLocationChanged(Location location) {
+        if(location != null){
+            double latitude= location.getLatitude();
+            double longitude = location.getLongitude();
+            Toast.makeText(myContext, "onLocationChanged is - \nLat: " + latitude + "\nLong: " + longitude, Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override

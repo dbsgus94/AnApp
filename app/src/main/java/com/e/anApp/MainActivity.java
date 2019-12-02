@@ -133,10 +133,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         {
             isSensorPresent = false;
         }
-
-
-
-
+        
         //다이어트 자극 명언 보여주기
         /*다음 링크 참고
         https://m.blog.naver.com/PostView.nhn?blogId=dagymdieting&logNo=221306225461&proxyReferer=https%3A%2F%2Fwww.google.com%2F
@@ -180,28 +177,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         editor.putInt("index", index);
         editor.apply();
     }
-/*
-    public void startService(View view) { startService(new Intent(getBaseContext(), MyService.class)); }
-    public void stopService(View view) { stopService(new Intent(getBaseContext(),MyService.class)); }
-
- */
-/*
-    @Override
-    protected void onNewIntent(Intent intent) {
-        processCommand(passedIntent);
-        super.onNewIntent(intent);
-    }
-
-    private void processCommand(Intent intent) {
-        if (intent != null) {
-            String command = intent.getStringExtra("command");
-            String name = intent.getStringExtra("name");
-
-            Toast.makeText(this, "서비스로부터 전달받은 데이터: " + command + ", " + name, Toast.LENGTH_LONG).show();
-        }
-    }
-    */
-
 
     @Override
     protected void onResume() {
@@ -212,8 +187,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     SensorManager.SENSOR_DELAY_NORMAL);
         }
     }
-
-
 
     @Override
     protected void onPause() {
