@@ -49,7 +49,7 @@ public class LocationUpdatesService extends Service {
     /**
      * The desired interval for location updates. Inexact. Updates may be more or less frequent.
      */
-    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 5000;
+    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 9000;
 
     /**
      * The fastest rate for active location updates. Updates will never be more frequent
@@ -243,12 +243,7 @@ public class LocationUpdatesService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
         // The PendingIntent to launch activity.
-        PendingIntent activityPendingIntent = PendingIntent.getActivity(this, 0,
-                new Intent(this, MapsActivity.class), 0);
-
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
-                .addAction(R.drawable.ic_launcher_background, getString(R.string.launch_activity),
-                        activityPendingIntent)
                 .addAction(R.drawable.ic_launcher_background, getString(R.string.remove_location_updates),
                         servicePendingIntent)
                 .setContentText(text)

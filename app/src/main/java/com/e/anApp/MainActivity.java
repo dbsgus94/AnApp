@@ -1,8 +1,10 @@
 package com.e.anApp;
 
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
@@ -17,6 +19,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -48,9 +53,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public ProgressBar simpleProgressBar;
     public int maxStep;
     public Intent passedIntent;
-
+    private IMyCounterService binder;
+    private boolean running =true;
 
     static int mStepDetector;
+
+    private ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            /*** Service가 가지고있는 binder를 전달받는다.* 즉, Service에서 구체화한 getCount() 메소드를 받았습니다.*/
+            binder = IMyCounterService.Stub.asInterface(service);
+        }
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -184,9 +202,46 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onSensorChanged(SensorEvent event) {
         if (mStepOffset == 0) {
             mStepOffset = (int)event.values[0];
-            //int totalStep = mStepOffset + mStepDetector;
-            simpleProgressBar.setProgress(mStepOffset );
-            textView5.setText(""+mStepDetector +" / " + maxStep + " 걸음");
+            Intent intent = new Intent(MainActivity.this, SensorService.class);
+            bindService(intent, connection,BIND_AUTO_CREATE);
+            running = true;
+            new Thread(new GetCountThread()).start();
+
+
+        }
+    }
+    private class GetCountThread implements Runnable {
+        private Handler handler = new Handler();
+
+        @Override
+        public void run() {
+            while(running) {
+                if(binder == null) {
+                    continue;
+                }
+
+
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+
+                                int totalStep = mStepOffset + binder.getCount();
+                                simpleProgressBar.setProgress(mStepOffset+binder.getCount() );
+                                textView5.setText(""+totalStep +" / " + maxStep + " 걸음");
+
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+                try {
+                    Thread.sleep(500);
+                } catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -265,6 +320,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onBackPressed() {
         super.onBackPressed();
+
         finish();
     }
 }

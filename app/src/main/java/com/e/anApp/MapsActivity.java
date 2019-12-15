@@ -78,7 +78,7 @@ public class MapsActivity extends AppCompatActivity
     private static final int GPS_ENABLE_REQUEST_CODE = 2001;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 2002;
     private static final int UPDATE_INTERVAL_MS = 4000;  // 1초
-    private static final int FASTEST_UPDATE_INTERVAL_MS = 2000; // 0.5초
+    private static final int FASTEST_UPDATE_INTERVAL_MS = 10000; // 0.5초
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE =34;
     public static boolean isMyLocationSet = false;
     private SensorManager sensorManager;
@@ -252,7 +252,10 @@ public class MapsActivity extends AppCompatActivity
             stepeditor.putInt("mStepDetector", binder.getCount());
         } catch (RemoteException e) {
             e.printStackTrace();
+        }catch (NullPointerException d) {
+            d.printStackTrace();
         }
+
         stepeditor.commit();
         Intent Intent = new Intent(MapsActivity.this, MainActivity.class);
         startActivity(Intent);
@@ -433,6 +436,8 @@ public class MapsActivity extends AppCompatActivity
                 isbtn_start = true;
                 startTimer();
                 startService(new Intent(getBaseContext(), SensorService.class));
+                Toast.makeText(MapsActivity.this,"걷기 시작",Toast.LENGTH_SHORT).show();
+
                 if (!checkPermissions()) {
                     requestPermissions();
                 } else {
@@ -508,7 +513,7 @@ public class MapsActivity extends AppCompatActivity
         String data2 = prefs.getString("long","2");
         double lat1 = Double.parseDouble(data1);
         double lat2 = Double.parseDouble(data2);
-        Toast.makeText(mActivity, ""+data1+data2, Toast.LENGTH_SHORT).show();
+        //Toast.makeText(mActivity, ""+data1+data2, Toast.LENGTH_SHORT).show();
         LatLng currentLatLng = new LatLng(lat1,lat2);
         markerOptions = new MarkerOptions();
         markerOptions.position(currentLatLng);
@@ -931,10 +936,11 @@ public class MapsActivity extends AppCompatActivity
             editor.putString("lat",latText);
             editor.putString("long",lngText);
             editor.commit();
+            /*
             if (location != null) {
                 Toast.makeText(MapsActivity.this, Utils.getLocationText(location),
                         Toast.LENGTH_SHORT).show();
-            }
+            }*/
         }
     }
     @Override
