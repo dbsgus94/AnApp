@@ -21,6 +21,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -58,7 +59,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -70,6 +70,7 @@ public class MapsActivity extends AppCompatActivity
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener,SharedPreferences.OnSharedPreferenceChangeListener{
+    //GPSTracker myGPS;
     private GoogleApiClient mGoogleApiClient = null;
     private GoogleMap mGoogleMap = null;
     private Marker currentMarker = null;
@@ -77,8 +78,8 @@ public class MapsActivity extends AppCompatActivity
     //private static final String TAG = "googlemap_example";
     private static final int GPS_ENABLE_REQUEST_CODE = 2001;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 2002;
-    private static final int UPDATE_INTERVAL_MS = 100000;  // 1초
-    private static final int FASTEST_UPDATE_INTERVAL_MS = 50000; // 0.5초
+    private static final int UPDATE_INTERVAL_MS = 4000;  // 1초
+    private static final int FASTEST_UPDATE_INTERVAL_MS = 2000; // 0.5초
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE =34;
     public static boolean isMyLocationSet = false;
     private SensorManager sensorManager;
@@ -101,27 +102,22 @@ public class MapsActivity extends AppCompatActivity
     static int counter;
     Button btn_start,btn_end,btn_reset;
     static Handler time_handler;
+    private int mStep;
+    private SensorManager mSensorManager;
+    private Sensor mSensor;
+    private boolean isSensorPresent = false;
+    private IMyCounterService binder;
+
+
+    private Intent intent;
+    private boolean running =true;
+
     private long timerTime = Long.MIN_VALUE;
-    //화이팅
+
     private static final String TAG = MainActivity.class.getSimpleName();
     private MyReceiver myReceiver;
     private LocationUpdatesService mService = null;
     private boolean mBound = false;
-
-    private final ServiceConnection mServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            LocationUpdatesService.LocalBinder binder = (LocationUpdatesService.LocalBinder) service;
-            mService = binder.getService();
-            mBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mService = null;
-            mBound = false;
-        }
-    };
 
     //on start timer
     public void startTimer(){
@@ -150,7 +146,34 @@ public class MapsActivity extends AppCompatActivity
             .setFastestInterval(FASTEST_UPDATE_INTERVAL_MS);
 
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
+    private ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            /*** Service가 가지고있는 binder를 전달받는다.* 즉, Service에서 구체화한 getCount() 메소드를 받았습니다.*/
+            binder = IMyCounterService.Stub.asInterface(service);
+        }
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
+
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            LocationUpdatesService.LocalBinder binder = (LocationUpdatesService.LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+            mBound = false;
+        }
+    };
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -164,34 +187,77 @@ public class MapsActivity extends AppCompatActivity
         tvStepDistance=(TextView)findViewById(R.id.stepdistance);
         tvStepCal = (TextView)findViewById(R.id.stepcal);
 
-
+        btn_start = (Button) findViewById(R.id.start);
+        btn_end = (Button) findViewById(R.id.end);
         btn_reset = (Button) findViewById(R.id.reset);
 
         ch = (Chronometer) findViewById(R.id.chronometer);
 
         counter = 0;
-        //화이팅
+/*
+        btn_start.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isbtn_start = true;
+                startTimer();
+                myGPS = new GPSTracker(MapsActivity.this);
+                startService(new Intent(getBaseContext(), SensorService.class));
+                startService(new Intent(getBaseContext(), GPSTracker.class));
+                if (myGPS.canGetLocation()) {
+                   double latitude = myGPS.getLatitude();
+                    double longitude = myGPS.getLongitude();
+                    //Toast.makeText(getApplicationContext(), "당신의 위치는 경도: " + latitude + " " + "위도: " + longitude, Toast.LENGTH_LONG).show();
+
+                } else {
+                    myGPS.showSettingAlert();
+                }
+               // Toast.makeText(MapsActivity.this, "걷기 시작", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        btn_end.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                counter = 0;
+                isbtn_start = false;
+                isbtn_end=true;
+                stopTimer();
+                stopService(new Intent(getBaseContext(),GPSTracker.class));
+                stopService(new Intent(getBaseContext(), SensorService.class));
+                Toast.makeText(MapsActivity.this,"걷기 종료",Toast.LENGTH_SHORT).show();
+            }
+        });
+*/
+        //
         myReceiver = new MyReceiver();
         if (Utils.requestingLocationUpdates(this)) {
             if (!checkPermissions()) {
                 requestPermissions();
             }
         }
+
         btn_reset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (isbtn_end) {
-                    counter = 0;
-                    mStepDetector = 0;
-                    isbtn_reset=true;
-                    mGoogleMap.clear();
-                    tvStepDetector.setText(String.valueOf(mStepDetector) + "보");
-                    tvStepDistance.setText(String.valueOf(toDis(mStepDetector)) + "m");
-                    tvStepCal.setText(String.valueOf(toCal(mStepDetector)) + "kcal");
-                    Toast.makeText(MapsActivity.this, "초기화", Toast.LENGTH_SHORT).show();
-                    ch.setBase(SystemClock.elapsedRealtime());
-                    ch.stop();
-                    isbtn_start = false;
+
+                    try {
+                        counter = 0;
+                        mStepDetector = 0;
+                        isbtn_reset=true;
+                        mGoogleMap.clear();
+                        tvStepDetector.setText(binder.getCount() + " 보");
+                        tvStepDistance.setText(toDis(binder.getCount()) + " m");
+                        tvStepCal.setText(toCal(binder.getCount()) + " kcal");
+                        Toast.makeText(MapsActivity.this, "초기화", Toast.LENGTH_SHORT).show();
+                        ch.setBase(SystemClock.elapsedRealtime());
+                        ch.stop();
+                        isbtn_start = false;
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+
+
                 }
 
             }
@@ -209,6 +275,8 @@ public class MapsActivity extends AppCompatActivity
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+
     }
 
     public float toDis(int var) {
@@ -220,91 +288,16 @@ public class MapsActivity extends AppCompatActivity
         int resultCal = var/30;
         return resultCal;
     }
-    private boolean checkPermissions() {
-        return  PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION);
-    }
-    private void requestPermissions() {
-        boolean shouldProvideRationale =
-                ActivityCompat.shouldShowRequestPermissionRationale(this,
-                        Manifest.permission.ACCESS_FINE_LOCATION);
-
-        // Provide an additional rationale to the user. This would happen if the user denied the
-        // request previously, but didn't check the "Don't ask again" checkbox.
-        if (shouldProvideRationale) {
-            Log.i(TAG, "Displaying permission rationale to provide additional context.");
-            Snackbar.make(
-                    findViewById(R.id.activity_maps),
-                    R.string.permission_rationale,
-                    Snackbar.LENGTH_INDEFINITE)
-                    .setAction(R.string.ok, new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            // Request permission
-                            ActivityCompat.requestPermissions(MapsActivity.this,
-                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                                    REQUEST_PERMISSIONS_REQUEST_CODE);
-                        }
-                    })
-                    .show();
-        } else {
-            Log.i(TAG, "Requesting permission");
-            // Request permission. It's possible this can be auto answered if device policy
-            // sets the permission in a given state or the user denied the permission
-            // previously and checked "Never ask again".
-            ActivityCompat.requestPermissions(MapsActivity.this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    REQUEST_PERMISSIONS_REQUEST_CODE);
-        }
-    }
-
-    /**
-     * Callback received when a permissions request has been completed.
-     */
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        Log.i(TAG, "onRequestPermissionResult");
-        if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
-            if (grantResults.length <= 0) {
-                // If user interaction was interrupted, the permission request is cancelled and you
-                // receive empty arrays.
-                Log.i(TAG, "User interaction was cancelled.");
-            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission was granted.
-                mService.requestLocationUpdates();
-            } else {
-                // Permission denied.
-                setButtonsState(false);
-                Snackbar.make(
-                        findViewById(R.id.activity_maps),
-                        R.string.permission_denied_explanation,
-                        Snackbar.LENGTH_INDEFINITE)
-                        .setAction(R.string.settings, new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                // Build intent that displays the App settings screen.
-                                Intent intent = new Intent();
-                                intent.setAction(
-                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                Uri uri = Uri.fromParts("package",
-                                        BuildConfig.APPLICATION_ID, null);
-                                intent.setData(uri);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(intent);
-                            }
-                        })
-                        .show();
-            }
-        }
-    }
 
     @Override
     protected void onPause() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
         sensorManager.unregisterListener(this);
         super.onPause();
+
     }
+
+
     @Override
     protected void onNewIntent(Intent intent) {
 
@@ -323,12 +316,12 @@ public class MapsActivity extends AppCompatActivity
         finish();
     }
 
+
     @Override
     public void onResume() {
 
         super.onResume();
-        LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver,
-                new IntentFilter(LocationUpdatesService.ACTION_BROADCAST));
+        LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver, new IntentFilter(LocationUpdatesService.ACTION_BROADCAST));
         sensorManager.registerListener(this, stepDetectorSensor, SensorManager.SENSOR_DELAY_UI);
 
 
@@ -350,20 +343,57 @@ public class MapsActivity extends AppCompatActivity
         }
 //        sensorManager.registerListener(this, stepDetectorSensor, SensorManager.SENSOR_DELAY_UI);
     }
+
     @Override
     public void onSensorChanged(SensorEvent event) {
+
         if (event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
             if (isbtn_start ) {
-                mStepDetector++;
-                toDis(mStepDetector);
-                toCal(mStepDetector);
-                tvStepDetector.setText(String.valueOf(mStepDetector) + " 보");
-                tvStepDistance.setText(String.valueOf(toDis(mStepDetector)) + " m");
-                tvStepCal.setText(String.valueOf(toCal(mStepDetector)) + " kcal");
+                Intent intent = new Intent(MapsActivity.this, SensorService.class);
+                bindService(intent, connection,BIND_AUTO_CREATE);
+                running = true;
+                new Thread(new GetCountThread()).start();
+
             }
+
         }
 
     }
+    private class GetCountThread implements Runnable {
+        private Handler handler = new Handler();
+
+        @Override
+        public void run() {
+            while(running) {
+                if(binder == null) {
+                    continue;
+                }
+
+
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            tvStepDetector.setText(binder.getCount() + " 보");
+                            tvStepDistance.setText(toDis(binder.getCount()) + " m");
+                            tvStepCal.setText(toCal(binder.getCount()) + " kcal");
+
+
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+                try {
+                    Thread.sleep(500);
+                } catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
 
     private void startLocationUpdates() {
 
@@ -390,11 +420,15 @@ public class MapsActivity extends AppCompatActivity
 
     }
 
+
+
     private void stopLocationUpdates() {
         Log.d(TAG,"stopLocationUpdates : LocationServices.FusedLocationApi.removeLocationUpdates");
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         mRequestingLocationUpdates = false;
     }
+
+
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -443,18 +477,22 @@ public class MapsActivity extends AppCompatActivity
             }
         });
 
+
         mGoogleMap.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
+
             @Override
             public void onCameraMove() {
             }
         });
         btn_start = (Button) findViewById(R.id.start);
         btn_end = (Button) findViewById(R.id.end);
+
         btn_start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 isbtn_start = true;
                 startTimer();
+                startService(new Intent(getBaseContext(), SensorService.class));
                 if (!checkPermissions()) {
                     requestPermissions();
                 } else {
@@ -470,10 +508,14 @@ public class MapsActivity extends AppCompatActivity
                 isbtn_end=true;
                 stopTimer();
                 mService.removeLocationUpdates();
+                stopService(new Intent(getBaseContext(), SensorService.class));
                 Toast.makeText(MapsActivity.this,"걷기 종료",Toast.LENGTH_SHORT).show();
             }
         });
+
+
         setButtonsState(Utils.requestingLocationUpdates(this));
+
     }
 
 
@@ -483,14 +525,24 @@ public class MapsActivity extends AppCompatActivity
                 = new LatLng( location.getLatitude(), location.getLongitude());
 
         Log.d(TAG, "onLocationChanged : ");
-        //String markerTitle = getCurrentAddress(currentPosition);
+        String markerTitle = getCurrentAddress(currentPosition);
 
         //마커에 글쓰 써주는 함수
         String markerSnippet = "위도:" + String.valueOf(location.getLatitude())
                 + " 경도:" + String.valueOf(location.getLongitude());
 
         //현재 위치에 마커 생성하고 이동
-       // setCurrentLocation(location, markerTitle, markerSnippet);
+
+        mCurrentLocatiion = location;
+
+        SharedPreferences sharedPreferences = getSharedPreferences("latlng", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        String latText = String.valueOf(location.getLatitude());
+        String lngText = String. valueOf(location.getLongitude());
+        editor.putString("lat", latText);
+        editor.putString("lng", lngText);
+        editor.commit();
+
         SharedPreferences prefs = getSharedPreferences("please",MODE_PRIVATE);
         String data1 = prefs.getString("lat", "0"); //no id: default value
         String data2 = prefs.getString("long","2");
@@ -500,7 +552,7 @@ public class MapsActivity extends AppCompatActivity
         LatLng currentLatLng = new LatLng(lat1,lat2);
         markerOptions = new MarkerOptions();
         markerOptions.position(currentLatLng);
-        //markerOptions.title(markerTitle);
+        markerOptions.title(markerTitle);
         markerOptions.snippet(markerSnippet);
         markerOptions.draggable(true);
         markerOptions.title("나 여기 있어요");
@@ -508,15 +560,50 @@ public class MapsActivity extends AppCompatActivity
         markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.circle));
         if(isbtn_start) {
             currentMarker = mGoogleMap.addMarker(markerOptions);
+            if (mMoveMapByAPI) {
+                Log.d(TAG, "setCurrentLocation :  mGoogleMap moveCamera "
+                        + location.getLatitude() + " " + location.getLongitude());
+                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(currentLatLng, 17);
+                //CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(currentLatLng);
+                mGoogleMap.moveCamera(cameraUpdate);
+            }
         }
-        mCurrentLocatiion = location;
-        SharedPreferences sharedPreferences = getSharedPreferences("latlng", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        String latText = String.valueOf(location.getLatitude());
-        String lngText = String. valueOf(location.getLongitude());
-        editor.putString("lat", latText);
-        editor.putString("lng", lngText);
-        editor.commit();
+
+    }
+
+    public String getCurrentAddress(LatLng latlng) {
+
+        //지오코더... GPS를 주소로 변환
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+
+        List<Address> addresses;
+
+        try {
+
+            addresses = geocoder.getFromLocation(
+                    latlng.latitude,
+                    latlng.longitude,
+                    1);
+        } catch (IOException ioException) {
+            //네트워크 문제
+            //Toast.makeText(this, "지오코더 서비스 사용불가", Toast.LENGTH_LONG).show();
+            return "지오코더 서비스 사용불가";
+        } catch (IllegalArgumentException illegalArgumentException) {
+            Toast.makeText(this, "잘못된 GPS 좌표", Toast.LENGTH_LONG).show();
+            return "잘못된 GPS 좌표";
+
+        }
+
+
+        if (addresses == null || addresses.size() == 0) {
+            Toast.makeText(this, "주소 미발견", Toast.LENGTH_LONG).show();
+            return "주소 미발견";
+
+        } else {
+            Address address = addresses.get(0);
+            return address.getAddressLine(0).toString();
+        }
+
     }
 
 
@@ -527,7 +614,6 @@ public class MapsActivity extends AppCompatActivity
 
             Log.d(TAG, "onStart: mGoogleApiClient connect");
             mGoogleApiClient.connect();
-
         }
         super.onStart();
         PreferenceManager.getDefaultSharedPreferences(this)
@@ -540,11 +626,14 @@ public class MapsActivity extends AppCompatActivity
             mGoogleMap.setMyLocationEnabled(true);
     }
 
+
     @Override
     protected void onStop() {
 
         if (mRequestingLocationUpdates) {
+
             Log.d(TAG, "onStop : call stopLocationUpdates");
+            stopLocationUpdates();
         }
 
         if ( mGoogleApiClient.isConnected()) {
@@ -561,12 +650,14 @@ public class MapsActivity extends AppCompatActivity
         }
         PreferenceManager.getDefaultSharedPreferences(this)
                 .unregisterOnSharedPreferenceChangeListener((SharedPreferences.OnSharedPreferenceChangeListener) this);
+
         super.onStop();
     }
 
 
     @Override
     public void onConnected(Bundle connectionHint) {
+
 
         if ( !mRequestingLocationUpdates ) {
 
@@ -620,40 +711,6 @@ public class MapsActivity extends AppCompatActivity
     }
 
 
-    public String getCurrentAddress(LatLng latlng) {
-
-        //지오코더... GPS를 주소로 변환
-        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
-
-        List<Address> addresses;
-
-        try {
-
-            addresses = geocoder.getFromLocation(
-                    latlng.latitude,
-                    latlng.longitude,
-                    1);
-        } catch (IOException ioException) {
-            //네트워크 문제
-            //Toast.makeText(this, "지오코더 서비스 사용불가", Toast.LENGTH_LONG).show();
-            return "지오코더 서비스 사용불가";
-        } catch (IllegalArgumentException illegalArgumentException) {
-            Toast.makeText(this, "잘못된 GPS 좌표", Toast.LENGTH_LONG).show();
-            return "잘못된 GPS 좌표";
-
-        }
-
-
-        if (addresses == null || addresses.size() == 0) {
-            Toast.makeText(this, "주소 미발견", Toast.LENGTH_LONG).show();
-            return "주소 미발견";
-
-        } else {
-            Address address = addresses.get(0);
-            return address.getAddressLine(0).toString();
-        }
-
-    }
 
 
 
@@ -664,50 +721,6 @@ public class MapsActivity extends AppCompatActivity
                 || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
     }
 
-//마커 제발
-    public void setCurrentLocation(Location location, String markerTitle, String markerSnippet) {
-       /*
-        mMoveMapByUser = false;
-        tt = new TimerTask() {
-            @Override
-            public void run() {
-                counter=counter +1;
-            }
-        };
-        Timer time = new Timer();
-        time.schedule(tt, 1000,1000);
-
-
-        //if (currentMarker != null) currentMarker.remove();
-
-            //Toast.makeText(this, ""+getTimerTime(), Toast.LENGTH_SHORT).show();
-        /*
-        SharedPreferences prefs = getSharedPreferences("please",MODE_PRIVATE);
-        String data1 = prefs.getString("lat", "i"); //no id: default value
-        String data2 = prefs.getString("long","2");
-        double lat1 = Double.parseDouble(data1);
-        double lat2 = Double.parseDouble(data2);
-        Toast.makeText(mActivity, ""+data1+data2, Toast.LENGTH_SHORT).show();
-        LatLng currentLatLng = new LatLng(lat1,lat2);
-        markerOptions = new MarkerOptions();
-        markerOptions.position(currentLatLng);
-        markerOptions.title(markerTitle);
-        markerOptions.snippet(markerSnippet);
-        markerOptions.draggable(true);
-        markerOptions.title("나 여기 있어요");
-        markerOptions.anchor(0.5f, 0.5f);
-        markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.circle));
-        if(isbtn_start) {
-            currentMarker = mGoogleMap.addMarker(markerOptions);
-            if (mMoveMapByAPI) {
-                    Log.d(TAG, "setCurrentLocation :  mGoogleMap moveCamera "
-                            + location.getLatitude() + " " + location.getLongitude());
-                    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(currentLatLng, 17);
-                    //CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(currentLatLng);
-                    mGoogleMap.moveCamera(cameraUpdate);
-                }
-        }*/
-    }
 
     public void getMyLocation()
     {
@@ -742,7 +755,10 @@ public class MapsActivity extends AppCompatActivity
         LatLng DEFAULT_LOCATION = new LatLng(37.56, 126.97);
         String markerTitle = "위치정보 가져올 수 없음";
         String markerSnippet = "위치 퍼미션과 GPS 활성 요부 확인하세요";
+
+
         //if (currentMarker != null) currentMarker.remove();
+
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.position(DEFAULT_LOCATION);
         markerOptions.title(markerTitle);
@@ -752,9 +768,196 @@ public class MapsActivity extends AppCompatActivity
         currentMarker = mGoogleMap.addMarker(markerOptions);
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(DEFAULT_LOCATION, 17);
         mGoogleMap.moveCamera(cameraUpdate);
+
     }
 
 
+    //여기부터는 런타임 퍼미션 처리을 위한 메소드들
+    @TargetApi(Build.VERSION_CODES.M)
+
+    private boolean checkPermissions() {
+        boolean fineLocationRationale = ActivityCompat
+                .shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.ACCESS_FINE_LOCATION);
+        int hasFineLocationPermission = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+
+        if (hasFineLocationPermission == PackageManager
+                .PERMISSION_DENIED && fineLocationRationale)
+            showDialogForPermission("앱을 실행하려면 퍼미션을 허가하셔야합니다.");
+
+        else if (hasFineLocationPermission
+                == PackageManager.PERMISSION_DENIED && !fineLocationRationale) {
+            showDialogForPermissionSetting("퍼미션 거부 + Don't ask again(다시 묻지 않음) " +
+                    "체크 박스를 설정한 경우로 설정에서 퍼미션 허가해야합니다.");
+        } else if (hasFineLocationPermission == PackageManager.PERMISSION_GRANTED) {
+
+
+            Log.d(TAG, "checkPermissions : 퍼미션 가지고 있음");
+
+            if ( !mGoogleApiClient.isConnected()) {
+
+                Log.d(TAG, "checkPermissions : 퍼미션 가지고 있음");
+                mGoogleApiClient.connect();
+            }
+        }
+        return  PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+    }
+
+
+
+    private void requestPermissions() {
+        boolean shouldProvideRationale =
+                ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.ACCESS_FINE_LOCATION);
+
+        // Provide an additional rationale to the user. This would happen if the user denied the
+        // request previously, but didn't check the "Don't ask again" checkbox.
+        if (shouldProvideRationale) {
+            Log.i(TAG, "Displaying permission rationale to provide additional context.");
+            Snackbar.make(
+                    findViewById(R.id.activity_maps),
+                    R.string.permission_rationale,
+                    Snackbar.LENGTH_INDEFINITE)
+                    .setAction(R.string.ok, new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            // Request permission
+                            ActivityCompat.requestPermissions(MapsActivity.this,
+                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                    REQUEST_PERMISSIONS_REQUEST_CODE);
+                        }
+                    })
+                    .show();
+        } else {
+            Log.i(TAG, "Requesting permission");
+            // Request permission. It's possible this can be auto answered if device policy
+            // sets the permission in a given state or the user denied the permission
+            // previously and checked "Never ask again".
+            ActivityCompat.requestPermissions(MapsActivity.this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_PERMISSIONS_REQUEST_CODE);
+        }
+    }
+
+
+    /*
+        @Override
+        public void onRequestPermissionsResult(int permsRequestCode,
+                                               @NonNull String[] permissions,
+                                               @NonNull int[] grantResults) {
+
+            if (permsRequestCode
+                    == PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION && grantResults.length > 0) {
+
+                boolean permissionAccepted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+
+                if (permissionAccepted) {
+
+
+                    if ( !mGoogleApiClient.isConnected()) {
+
+                        Log.d(TAG, "onRequestPermissionsResult : mGoogleApiClient connect");
+                        mGoogleApiClient.connect();
+                    }
+
+
+
+                } else {
+
+                    checkPermissions();
+                }
+            }
+
+        }
+
+    */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        Log.i(TAG, "onRequestPermissionResult");
+        if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
+            if (grantResults.length <= 0) {
+                // If user interaction was interrupted, the permission request is cancelled and you
+                // receive empty arrays.
+                Log.i(TAG, "User interaction was cancelled.");
+            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission was granted.
+                mService.requestLocationUpdates();
+            } else {
+                // Permission denied.
+                setButtonsState(false);
+                Snackbar.make(findViewById(R.id.activity_maps),
+                        R.string.permission_denied_explanation,
+                        Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.settings, new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                // Build intent that displays the App settings screen.
+                                Intent intent = new Intent();
+                                intent.setAction(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                Uri uri = Uri.fromParts("package",
+                                        BuildConfig.APPLICATION_ID, null);
+                                intent.setData(uri);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                            }
+                        })
+                        .show();
+            }
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    private void showDialogForPermission(String msg) {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("알림");
+        builder.setMessage(msg);
+        builder.setCancelable(false);
+        builder.setPositiveButton("예", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                ActivityCompat.requestPermissions(mActivity,
+                        new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                        PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+            }
+        });
+
+        builder.setNegativeButton("아니오", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                finish();
+            }
+        });
+        builder.create().show();
+    }
+
+    private void showDialogForPermissionSetting(String msg) {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("알림");
+        builder.setMessage(msg);
+        builder.setCancelable(true);
+        builder.setPositiveButton("예", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+
+                askPermissionOnceAgain = true;
+
+                Intent myAppSettings = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:" + mActivity.getPackageName()));
+                myAppSettings.addCategory(Intent.CATEGORY_DEFAULT);
+                myAppSettings.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                mActivity.startActivity(myAppSettings);
+            }
+        });
+        builder.setNegativeButton("아니오", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                finish();
+            }
+        });
+        builder.create().show();
+    }
 
 
     //여기부터는 GPS 활성화를 위한 메소드들
@@ -796,7 +999,10 @@ public class MapsActivity extends AppCompatActivity
                     if (checkLocationServicesStatus()) {
 
                         Log.d(TAG, "onActivityResult : 퍼미션 가지고 있음");
+
+
                         if ( !mGoogleApiClient.isConnected() ) {
+
                             Log.d( TAG, "onActivityResult : mGoogleApiClient connect ");
                             mGoogleApiClient.connect();
                         }
@@ -810,8 +1016,8 @@ public class MapsActivity extends AppCompatActivity
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
     }
-    //브로드캐스트
     private class MyReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -822,7 +1028,7 @@ public class MapsActivity extends AppCompatActivity
             String lngText = String.valueOf(location.getLongitude());
             editor.putString("lat",latText);
             editor.putString("long",lngText);
-            editor.apply();
+            editor.commit();
             if (location != null) {
                 Toast.makeText(MapsActivity.this, Utils.getLocationText(location),
                         Toast.LENGTH_SHORT).show();
@@ -837,7 +1043,6 @@ public class MapsActivity extends AppCompatActivity
                     false));
         }
     }
-
     private void setButtonsState(boolean requestingLocationUpdates) {
         if (requestingLocationUpdates) {
             btn_start.setEnabled(false);
@@ -847,4 +1052,7 @@ public class MapsActivity extends AppCompatActivity
             btn_end.setEnabled(false);
         }
     }
+
+
+
 }
