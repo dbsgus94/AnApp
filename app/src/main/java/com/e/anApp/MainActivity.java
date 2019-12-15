@@ -1,46 +1,29 @@
 package com.e.anApp;
 
-import android.app.Service;
 import android.Manifest;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
-import android.graphics.drawable.BitmapDrawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.location.LocationManager;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import android.graphics.drawable.Drawable;
-import android.os.StrictMode;
-import android.util.Log;
+
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.google.android.gms.maps.model.LatLng;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserFactory;
 
-import java.io.InputStream;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
@@ -200,12 +183,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (mStepOffset == 0) {
-            mStepOffset = (int) event.values[0];
+            mStepOffset = (int)event.values[0];
+            //int totalStep = mStepOffset + mStepDetector;
+            simpleProgressBar.setProgress(mStepOffset );
+            textView5.setText(""+mStepDetector +" / " + maxStep + " 걸음");
         }
-
-        int totalStep = mStepOffset + mStepDetector;
-        simpleProgressBar.setProgress(mStepOffset + mStepDetector);
-        textView5.setText(""+totalStep +" / " + 8000 + " 걸음");
     }
 
     @Override

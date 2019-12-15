@@ -55,7 +55,6 @@ import com.google.android.material.snackbar.Snackbar;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import java.util.Timer;
 import java.util.TimerTask;
 
 import androidx.annotation.NonNull;
@@ -194,41 +193,7 @@ public class MapsActivity extends AppCompatActivity
         ch = (Chronometer) findViewById(R.id.chronometer);
 
         counter = 0;
-/*
-        btn_start.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                isbtn_start = true;
-                startTimer();
-                myGPS = new GPSTracker(MapsActivity.this);
-                startService(new Intent(getBaseContext(), SensorService.class));
-                startService(new Intent(getBaseContext(), GPSTracker.class));
-                if (myGPS.canGetLocation()) {
-                   double latitude = myGPS.getLatitude();
-                    double longitude = myGPS.getLongitude();
-                    //Toast.makeText(getApplicationContext(), "당신의 위치는 경도: " + latitude + " " + "위도: " + longitude, Toast.LENGTH_LONG).show();
 
-                } else {
-                    myGPS.showSettingAlert();
-                }
-               // Toast.makeText(MapsActivity.this, "걷기 시작", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        btn_end.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                counter = 0;
-                isbtn_start = false;
-                isbtn_end=true;
-                stopTimer();
-                stopService(new Intent(getBaseContext(),GPSTracker.class));
-                stopService(new Intent(getBaseContext(), SensorService.class));
-                Toast.makeText(MapsActivity.this,"걷기 종료",Toast.LENGTH_SHORT).show();
-            }
-        });
-*/
-        //
         myReceiver = new MyReceiver();
         if (Utils.requestingLocationUpdates(this)) {
             if (!checkPermissions()) {
@@ -236,32 +201,6 @@ public class MapsActivity extends AppCompatActivity
             }
         }
 
-        btn_reset.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (isbtn_end) {
-
-                    try {
-                        counter = 0;
-                        mStepDetector = 0;
-                        isbtn_reset=true;
-                        mGoogleMap.clear();
-                        tvStepDetector.setText(binder.getCount() + " 보");
-                        tvStepDistance.setText(toDis(binder.getCount()) + " m");
-                        tvStepCal.setText(toCal(binder.getCount()) + " kcal");
-                        Toast.makeText(MapsActivity.this, "초기화", Toast.LENGTH_SHORT).show();
-                        ch.setBase(SystemClock.elapsedRealtime());
-                        ch.stop();
-                        isbtn_start = false;
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-
-
-                }
-
-            }
-        });
 
         Log.d(TAG, "onCreate");
         mActivity = this;
@@ -309,7 +248,11 @@ public class MapsActivity extends AppCompatActivity
         super.onBackPressed();
         SharedPreferences stepPreferences = getSharedPreferences("stepPreferences", MODE_PRIVATE);
         SharedPreferences.Editor stepeditor = stepPreferences.edit();
-        stepeditor.putInt("mStepDetector", mStepDetector);
+        try {
+            stepeditor.putInt("mStepDetector", binder.getCount());
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
         stepeditor.commit();
         Intent Intent = new Intent(MapsActivity.this, MainActivity.class);
         startActivity(Intent);
@@ -341,7 +284,6 @@ public class MapsActivity extends AppCompatActivity
                 checkPermissions();
             }
         }
-//        sensorManager.registerListener(this, stepDetectorSensor, SensorManager.SENSOR_DELAY_UI);
     }
 
     @Override
@@ -374,10 +316,11 @@ public class MapsActivity extends AppCompatActivity
                     @Override
                     public void run() {
                         try {
-                            tvStepDetector.setText(binder.getCount() + " 보");
-                            tvStepDistance.setText(toDis(binder.getCount()) + " m");
-                            tvStepCal.setText(toCal(binder.getCount()) + " kcal");
-
+                            if(isbtn_start) {
+                                tvStepDetector.setText(binder.getCount() + " 보");
+                                tvStepDistance.setText(toDis(binder.getCount()) + " m");
+                                tvStepCal.setText(toCal(binder.getCount()) + " kcal");
+                            }
 
                         } catch (RemoteException e) {
                             e.printStackTrace();
@@ -421,7 +364,6 @@ public class MapsActivity extends AppCompatActivity
     }
 
 
-
     private void stopLocationUpdates() {
         Log.d(TAG,"stopLocationUpdates : LocationServices.FusedLocationApi.removeLocationUpdates");
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
@@ -435,13 +377,11 @@ public class MapsActivity extends AppCompatActivity
 
         Log.d(TAG, "onMapReady :");
         mGoogleMap = googleMap;
-        //런타임 퍼미션 요청 대화상자나 GPS 활성 요청 대화상자 보이기전에
-        //지도의 초기위치를 서울로 이동
+
         getMyLocation();
         //mGoogleMap.getUiSettings().setZoomControlsEnabled(false);
         mGoogleMap.getUiSettings().setMyLocationButtonEnabled(false);
         mGoogleMap.animateCamera(CameraUpdateFactory.zoomTo(17.0f));
-        setDefaultLocation();
         mGoogleMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener(){
 
             @Override
@@ -510,6 +450,26 @@ public class MapsActivity extends AppCompatActivity
                 mService.removeLocationUpdates();
                 stopService(new Intent(getBaseContext(), SensorService.class));
                 Toast.makeText(MapsActivity.this,"걷기 종료",Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        btn_reset.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isbtn_end) {
+                    isbtn_start = false;
+                    counter = 0;
+                    mStepDetector = 0;
+                    isbtn_reset=true;
+                    stopService(new Intent(getBaseContext(), SensorService.class));
+                    mGoogleMap.clear();
+                    tvStepDetector.setText("0"+ "보");
+                    tvStepDistance.setText( "0 보");
+                    tvStepCal.setText( "0 보");
+                    Toast.makeText(MapsActivity.this, "초기화", Toast.LENGTH_SHORT).show();
+                    ch.setBase(SystemClock.elapsedRealtime());
+                    ch.stop();
+                }
             }
         });
 
@@ -746,32 +706,6 @@ public class MapsActivity extends AppCompatActivity
         });
     }
 
-
-    public void setDefaultLocation() {
-
-        mMoveMapByUser = false;
-
-        //디폴트 위치, Seoul
-        LatLng DEFAULT_LOCATION = new LatLng(37.56, 126.97);
-        String markerTitle = "위치정보 가져올 수 없음";
-        String markerSnippet = "위치 퍼미션과 GPS 활성 요부 확인하세요";
-
-
-        //if (currentMarker != null) currentMarker.remove();
-
-        MarkerOptions markerOptions = new MarkerOptions();
-        markerOptions.position(DEFAULT_LOCATION);
-        markerOptions.title(markerTitle);
-        markerOptions.snippet(markerSnippet);
-        markerOptions.draggable(true);
-
-        currentMarker = mGoogleMap.addMarker(markerOptions);
-        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(DEFAULT_LOCATION, 17);
-        mGoogleMap.moveCamera(cameraUpdate);
-
-    }
-
-
     //여기부터는 런타임 퍼미션 처리을 위한 메소드들
     @TargetApi(Build.VERSION_CODES.M)
 
@@ -841,38 +775,6 @@ public class MapsActivity extends AppCompatActivity
         }
     }
 
-
-    /*
-        @Override
-        public void onRequestPermissionsResult(int permsRequestCode,
-                                               @NonNull String[] permissions,
-                                               @NonNull int[] grantResults) {
-
-            if (permsRequestCode
-                    == PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION && grantResults.length > 0) {
-
-                boolean permissionAccepted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
-
-                if (permissionAccepted) {
-
-
-                    if ( !mGoogleApiClient.isConnected()) {
-
-                        Log.d(TAG, "onRequestPermissionsResult : mGoogleApiClient connect");
-                        mGoogleApiClient.connect();
-                    }
-
-
-
-                } else {
-
-                    checkPermissions();
-                }
-            }
-
-        }
-
-    */
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
@@ -1052,7 +954,4 @@ public class MapsActivity extends AppCompatActivity
             btn_end.setEnabled(false);
         }
     }
-
-
-
 }
